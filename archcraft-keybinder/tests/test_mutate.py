@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from keybinder.mutate import update_keybind
+from keybinder.mutate import set_execute, update_keybind
 from keybinder.parse import parse_rc
 from keybinder.write import write_rc_with_keyboard
 from tests.fixtures.xml_samples import SAMPLE_RC
@@ -38,3 +38,24 @@ def test_update_execute_command(tmp_path: Path, monkeypatch):
     )
     binds = {b.key: b for b in parse_rc(rc)}
     assert binds["W-Return"].summary() == "kitty"
+
+
+def test_new_key_has_no_namespace_prefix(tmp_path: Path, monkeypatch):
+    """A fresh rc.xml keeps xmlns on <openbox_config> only; new nodes must match."""
+    rc = tmp_path / "rc.xml"
+    rc.write_text(SAMPLE_RC)
+    monkeypatch.setattr("keybinder.write.BACKUP_DIR", tmp_path / "backups")
+
+    set_execute("W-z", "kitty", path=rc)
+    update_keybind(
+        "W-y",
+        action_name="Execute",
+        params={"command": "thunar"},
+        path=rc,
+        create_if_missing=True,
+    )
+    text = rc.read_text()
+    assert "ns0:" not in text
+    binds = {b.key: b for b in parse_rc(rc)}
+    assert binds["W-z"].summary() == "kitty"
+    assert binds["W-y"].summary() == "thunar"

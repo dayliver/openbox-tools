@@ -16,6 +16,3 @@ SKEL_RC = Path("/etc/skel/.config/openbox/rc.xml")
 
 # Bundled fallback (shipped with the package)
 BUNDLED_KEYBOARD = Path(__file__).resolve().parent / "data" / "archcraft-keyboard.xml"
-
-# Repo-root copy used during development if present
-REPO_DEFAULTS = Path(__file__).resolve().parents[2] / "defaults" / "archcraft-keyboard.xml"

@@ -7,7 +7,7 @@ from pathlib import Path
 from lxml import etree
 
 from keybinder.parse import extract_keyboard_xml, parse_keyboard_xml, read_rc_text
-from keybinder.paths import NS, RC_XML
+from keybinder.paths import RC_XML
 from keybinder.write import write_rc_with_keyboard
 
 
@@ -17,6 +17,17 @@ class MutateError(RuntimeError):
 
 def _local(tag: str) -> str:
     return tag.rsplit("}", 1)[-1] if isinstance(tag, str) and tag.startswith("{") else str(tag)
+
+
+def _qname(parent: etree._Element, name: str) -> str:
+    """Tag for a new child, in the same namespace as ``parent``.
+
+    A <keyboard> fragment cut out of rc.xml carries no xmlns of its own (it is
+    inherited from <openbox_config>), so forcing the Openbox namespace here
+    would serialise new nodes as ``<ns0:keybind xmlns:ns0=…>``.
+    """
+    ns = etree.QName(parent).namespace
+    return f"{{{ns}}}{name}" if ns else name
 
 
 def _load_keyboard(path: Path | None = None) -> tuple[Path, etree._Element]:
@@ -56,7 +67,7 @@ def _set_leaf_param(action: etree._Element, name: str, value: str) -> None:
                 return
             child.text = value
             return
-    node = etree.SubElement(action, f"{{{NS}}}{name}")
+    node = etree.SubElement(action, _qname(action, name))
     node.text = value
 
 
@@ -77,10 +88,10 @@ def set_execute(
         for child in list(elem):
             elem.remove(child)
     else:
-        elem = etree.SubElement(root, f"{{{NS}}}keybind")
+        elem = etree.SubElement(root, _qname(root, "keybind"))
         elem.set("key", key)
     elem.set("key", key)
-    action = etree.SubElement(elem, f"{{{NS}}}action")
+    action = etree.SubElement(elem, _qname(elem, "action"))
     action.set("name", "Execute")
     _set_leaf_param(action, "command", command)
     backup = write_rc_with_keyboard(_dump_keyboard(root), path=target, do_backup=do_backup)
@@ -120,9 +131,9 @@ def update_keybind(
     if not existing:
         if not create_if_missing:
             raise KeyError(f"Keybind not found: {old_key}")
-        elem = etree.SubElement(root, f"{{{NS}}}keybind")
+        elem = etree.SubElement(root, _qname(root, "keybind"))
         elem.set("key", new_key)
-        action = etree.SubElement(elem, f"{{{NS}}}action")
+        action = etree.SubElement(elem, _qname(elem, "action"))
         action.set("name", action_name or "Execute")
         for pname, pval in (params or {}).items():
             if pval.strip():
@@ -149,7 +160,7 @@ def update_keybind(
 
     actions = _action_elements(elem)
     if not actions:
-        action = etree.SubElement(elem, f"{{{NS}}}action")
+        action = etree.SubElement(elem, _qname(elem, "action"))
         action.set("name", action_name or "Execute")
         actions = [action]
     primary = actions[0]

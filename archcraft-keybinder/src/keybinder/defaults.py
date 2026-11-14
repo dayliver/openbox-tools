@@ -5,8 +5,13 @@ from __future__ import annotations
 from pathlib import Path
 
 from keybinder.models import Keybind, Origin
-from keybinder.parse import extract_keyboard_xml, parse_keyboard_xml, parse_rc
-from keybinder.paths import BUNDLED_KEYBOARD, RC_XML, REPO_DEFAULTS, SKEL_RC
+from keybinder.parse import (
+    extract_keyboard_xml,
+    parse_keyboard_xml,
+    parse_rc,
+    read_rc_text,
+)
+from keybinder.paths import BUNDLED_KEYBOARD, RC_XML, SKEL_RC
 from keybinder.write import write_rc_with_keyboard
 
 
@@ -19,12 +24,11 @@ def stock_keyboard_xml() -> tuple[str, Path]:
     if SKEL_RC.is_file():
         text = SKEL_RC.read_text(encoding="utf-8")
         return extract_keyboard_xml(text), SKEL_RC
-    for candidate in (BUNDLED_KEYBOARD, REPO_DEFAULTS):
-        if candidate.is_file():
-            raw = candidate.read_text(encoding="utf-8")
-            if "<keyboard" in raw:
-                return extract_keyboard_xml(raw), candidate
-            raise DefaultsError(f"Bundled defaults missing <keyboard>: {candidate}")
+    if BUNDLED_KEYBOARD.is_file():
+        raw = BUNDLED_KEYBOARD.read_text(encoding="utf-8")
+        if "<keyboard" in raw:
+            return extract_keyboard_xml(raw), BUNDLED_KEYBOARD
+        raise DefaultsError(f"Bundled defaults missing <keyboard>: {BUNDLED_KEYBOARD}")
     raise DefaultsError(
         "No Archcraft defaults found. Expected /etc/skel/.config/openbox/rc.xml "
         f"or {BUNDLED_KEYBOARD}"
