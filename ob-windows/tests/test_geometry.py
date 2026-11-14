@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from ob_grid.config import Config
-from ob_grid.geometry import (
+from ob_windows.grid.config import Config
+from ob_windows.grid.geometry import (
     Rect,
     grow_edge,
     leading_edge_lines,

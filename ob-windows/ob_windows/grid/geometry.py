@@ -1,24 +1,17 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from ob_windows.grid.config import Config
+from ob_windows.rect import Rect
 
-from ob_grid.config import Config
-
-
-@dataclass(frozen=True)
-class Rect:
-    x: int
-    y: int
-    w: int
-    h: int
-
-    @property
-    def x2(self) -> int:
-        return self.x + self.w
-
-    @property
-    def y2(self) -> int:
-        return self.y + self.h
+__all__ = [
+    "Rect",
+    "at_work_bottom",
+    "at_work_top",
+    "grow_edge",
+    "move_window",
+    "shrink_toward",
+    "snap_size",
+]
 
 
 def span(fraction: float, work_size: int, gap: int) -> int:
@@ -227,3 +220,11 @@ def snap_size(rect: Rect, work: Rect, cfg: Config, axis: str, grow: bool) -> Rec
     if nxt is None:
         return rect
     return clamp_rect(Rect(rect.x, rect.y, rect.w, nxt), work)
+
+
+def at_work_top(rect: Rect, work: Rect, tol: int) -> bool:
+    return abs(rect.y - work.y) <= tol
+
+
+def at_work_bottom(rect: Rect, work: Rect, tol: int) -> bool:
+    return abs(rect.y2 - work.y2) <= tol

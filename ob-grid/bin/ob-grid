@@ -1,7 +1,0 @@
-#!/usr/bin/env bash
-set -euo pipefail
-HERE="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
-ROOT="$(cd "$HERE/.." && pwd)"
-export PYTHONPATH="$ROOT${PYTHONPATH:+:$PYTHONPATH}"
-# Hide harmless Gtk theme parse noise from libwnck init
-exec /usr/bin/python3 -m ob_grid "$@" 2> >(grep -v -F 'Theme parsing error' >&2 || true)

@@ -3,50 +3,53 @@ from __future__ import annotations
 import argparse
 import sys
 
-from ob_grid import __version__
-from ob_grid.config import USER_CONFIG, ensure_user_config, load_config
-from ob_grid.geometry import grow_edge, move_window, shrink_toward, snap_size
-from ob_grid.window import (
-    apply_rect,
+from ob_windows import __version__
+from ob_windows.grid.config import USER_CONFIG, ensure_user_config, load_config
+from ob_windows.grid.geometry import (
     at_work_bottom,
     at_work_top,
-    get_active,
-    maximize_window,
-    minimize_window,
+    grow_edge,
+    move_window,
+    shrink_toward,
+    snap_size,
 )
 
 DIRS = ("left", "right", "up", "down")
 
 
 def _run_transform(transform) -> int:
+    from ob_windows import wm  # lazy: keeps --help / --version off Gtk
+
     ensure_user_config()
     cfg = load_config()
-    active = get_active()
+    active = wm.active_window()
     new_rect = transform(active.rect, active.work, cfg)
     if new_rect == active.rect:
         return 0
-    apply_rect(active, new_rect)
+    wm.apply_frame(active.wnck, new_rect)
     return 0
 
 
 def cmd_move(args: argparse.Namespace) -> int:
+    from ob_windows import wm
+
     ensure_user_config()
     cfg = load_config()
-    active = get_active()
+    active = wm.active_window()
 
     # Prefer a real move (incl. shrink-to-fit) before edge actions. Otherwise a
     # maximized window is flush with the bottom and Super+Down would minimize
     # instead of dropping the top edge to ~1/3 with height ~2/3.
     new_rect = move_window(active.rect, active.work, cfg, args.direction)
     if new_rect != active.rect:
-        apply_rect(active, new_rect)
+        wm.apply_frame(active.wnck, new_rect)
         return 0
 
     if args.direction == "up" and at_work_top(active.rect, active.work, cfg.tolerance_px):
-        maximize_window(active)
+        wm.maximize(active.wnck)
         return 0
     if args.direction == "down" and at_work_bottom(active.rect, active.work, cfg.tolerance_px):
-        minimize_window(active)
+        wm.minimize(active.wnck)
         return 0
     return 0
 
@@ -65,9 +68,11 @@ def cmd_size(args: argparse.Namespace) -> int:
 
 
 def cmd_info(_: argparse.Namespace) -> int:
+    from ob_windows import wm
+
     ensure_user_config()
     cfg = load_config()
-    active = get_active()
+    active = wm.active_window()
     print(f"config: {USER_CONFIG}")
     print(f"horizontal: {cfg.horizontal}")
     print(f"vertical:   {cfg.vertical}")

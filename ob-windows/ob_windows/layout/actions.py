@@ -2,8 +2,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from ob_layout import launch as launchmod
-from ob_layout import windows as W
+from ob_windows import wm
+from ob_windows.layout import launch as launchmod
+from ob_windows.layout import windows as W
+from ob_windows.layout.ratio import from_fractions, to_fractions
 
 
 def capture_current_workspace() -> dict[str, Any]:
@@ -14,8 +16,7 @@ def capture_current_workspace() -> dict[str, Any]:
 
     entries = []
     for wi in wins:
-        work = W.workarea_for_point(wi.rect.x + wi.rect.w // 2, wi.rect.y + wi.rect.h // 2)
-        frac = W.to_fractions(wi.rect, work)
+        frac = to_fractions(wi.rect, wm.workarea_for_rect(wi.rect))
         covers = frac["w"] >= 0.95 and frac["h"] >= 0.95
         maximized = bool(wi.maximized or covers)
         if maximized:
@@ -68,7 +69,7 @@ def restore_preset(data: dict[str, Any]) -> tuple[int, int]:
     """Returns (placed, failed)."""
     desk = int(data.get("desktop", 0))
     W.goto_desktop(desk)
-    work = W.primary_workarea()
+    work = wm.primary_workarea()
 
     pool: dict[str, list[W.WinInfo]] = {}
     for wi in W.list_normal_windows():
@@ -106,16 +107,16 @@ def restore_preset(data: dict[str, Any]) -> tuple[int, int]:
 
         W.move_to_desktop(wi.wnck, desk)
         if entry.get("maximized"):
-            W.maximize(wi.wnck)
+            wm.maximize(wi.wnck)
         else:
-            frame = W.from_fractions(
+            frame = from_fractions(
                 float(entry["x"]),
                 float(entry["y"]),
                 float(entry["w"]),
                 float(entry["h"]),
                 work,
             )
-            W.apply_frame(wi.wnck, frame)
+            wm.apply_frame(wi.wnck, frame)
         placed += 1
 
     W.goto_desktop(desk)

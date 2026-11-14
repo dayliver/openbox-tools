@@ -3,11 +3,11 @@ from __future__ import annotations
 import argparse
 import sys
 
-from ob_layout import __version__
-from ob_layout.actions import capture_current_workspace, restore_preset
-from ob_layout.rofi_ui import ask_name, dmenu
-from ob_layout.store import delete_preset, list_presets, load_preset, save_preset
-from ob_layout.windows import notify
+from ob_windows import __version__
+from ob_windows.layout.actions import capture_current_workspace, restore_preset
+from ob_windows.layout.rofi_ui import ask_name, dmenu
+from ob_windows.layout.store import delete_preset, list_presets, load_preset, save_preset
+from ob_windows.layout.windows import notify
 
 
 def cmd_save(name: str | None) -> int:

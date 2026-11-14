@@ -9,7 +9,8 @@ try:
 except ModuleNotFoundError:  # pragma: no cover
     import tomli as tomllib  # type: ignore
 
-DEFAULT_CONFIG = Path(__file__).resolve().parent.parent / "config.default.toml"
+# <repo>/ob-windows/config.default.toml (three levels above this file)
+DEFAULT_CONFIG = Path(__file__).resolve().parents[2] / "config.default.toml"
 USER_CONFIG = Path.home() / ".config" / "ob-grid" / "config.toml"
 
 
