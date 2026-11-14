@@ -1,0 +1,16 @@
+# ob-grid — ratio-grid window move / resize for Openbox
+# Copied to ~/.config/ob-grid/config.toml on first run (or by install.sh).
+
+[grid]
+# Fraction of the workarea (Archcraft outer margins already applied via _NET_WORKAREA).
+# Vertical skips 1/4 — usually too short on a laptop.
+horizontal = [0.25, 0.333333, 0.5, 0.666667, 0.75, 1.0]
+vertical   = [0.333333, 0.5, 0.666667, 0.75, 1.0]
+
+[gaps]
+# Pixels between two tiled windows. Outer inset comes from Openbox <margins> / workarea.
+inner = 10
+
+[behavior]
+# How close (px) a current edge/size must be to count as "on" a grid step.
+tolerance_px = 12
