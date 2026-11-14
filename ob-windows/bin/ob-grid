@@ -3,6 +3,5 @@ set -euo pipefail
 HERE="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 ROOT="$(cd "$HERE/.." && pwd)"
 export PYTHONPATH="$ROOT${PYTHONPATH:+:$PYTHONPATH}"
-# System python: PyGObject (Gtk/Wnck) comes from pacman, not from a venv.
-# Hide harmless Gtk theme parse noise from libwnck init.
-exec /usr/bin/python3 -m ob_windows.grid "$@" 2> >(grep -v -F 'Theme parsing error' >&2 || true)
+# System python: python-xlib comes from pacman, not from a venv.
+exec /usr/bin/python3 -m ob_windows.grid "$@"

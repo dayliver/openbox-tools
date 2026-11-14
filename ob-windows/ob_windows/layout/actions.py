@@ -9,7 +9,7 @@ from ob_windows.layout.ratio import from_fractions, to_fractions
 
 
 def capture_current_workspace() -> dict[str, Any]:
-    desk = W.current_desktop()
+    desk = wm.current_desktop()
     wins = W.list_normal_windows(desktop=desk)
     if not wins:
         raise RuntimeError("no normal windows on this workspace")
@@ -68,7 +68,7 @@ def _take_from_pool(
 def restore_preset(data: dict[str, Any]) -> tuple[int, int]:
     """Returns (placed, failed)."""
     desk = int(data.get("desktop", 0))
-    W.goto_desktop(desk)
+    wm.goto_desktop(desk)
     work = wm.primary_workarea()
 
     pool: dict[str, list[W.WinInfo]] = {}
@@ -105,9 +105,9 @@ def restore_preset(data: dict[str, Any]) -> tuple[int, int]:
                 failed += 1
                 continue
 
-        W.move_to_desktop(wi.wnck, desk)
+        wm.move_to_desktop(wi.xid, desk)
         if entry.get("maximized"):
-            wm.maximize(wi.wnck)
+            wm.maximize(wi.xid)
         else:
             frame = from_fractions(
                 float(entry["x"]),
@@ -116,8 +116,8 @@ def restore_preset(data: dict[str, Any]) -> tuple[int, int]:
                 float(entry["h"]),
                 work,
             )
-            wm.apply_frame(wi.wnck, frame)
+            wm.apply_frame(wi.xid, frame)
         placed += 1
 
-    W.goto_desktop(desk)
+    wm.goto_desktop(desk)
     return placed, failed

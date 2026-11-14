@@ -18,7 +18,7 @@ DIRS = ("left", "right", "up", "down")
 
 
 def _run_transform(transform) -> int:
-    from ob_windows import wm  # lazy: keeps --help / --version off Gtk
+    from ob_windows import wm  # lazy: --help / --version need no X connection
 
     ensure_user_config()
     cfg = load_config()
@@ -26,7 +26,7 @@ def _run_transform(transform) -> int:
     new_rect = transform(active.rect, active.work, cfg)
     if new_rect == active.rect:
         return 0
-    wm.apply_frame(active.wnck, new_rect)
+    wm.apply_frame(active.xid, new_rect)
     return 0
 
 
@@ -42,14 +42,14 @@ def cmd_move(args: argparse.Namespace) -> int:
     # instead of dropping the top edge to ~1/3 with height ~2/3.
     new_rect = move_window(active.rect, active.work, cfg, args.direction)
     if new_rect != active.rect:
-        wm.apply_frame(active.wnck, new_rect)
+        wm.apply_frame(active.xid, new_rect)
         return 0
 
     if args.direction == "up" and at_work_top(active.rect, active.work, cfg.tolerance_px):
-        wm.maximize(active.wnck)
+        wm.maximize(active.xid)
         return 0
     if args.direction == "down" and at_work_bottom(active.rect, active.work, cfg.tolerance_px):
-        wm.minimize(active.wnck)
+        wm.minimize(active.xid)
         return 0
     return 0
 
@@ -78,7 +78,7 @@ def cmd_info(_: argparse.Namespace) -> int:
     print(f"vertical:   {cfg.vertical}")
     print(f"inner_gap:  {cfg.inner_gap}")
     print(f"workarea:   {active.work}")
-    print(f"window:     {active.rect}  ({active.wnck.get_name()})")
+    print(f"window:     {active.rect}  ({active.name})")
     return 0
 
 

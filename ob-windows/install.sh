@@ -7,6 +7,11 @@ LOCAL_BIN="${XDG_BIN_HOME:-$HOME/.local/bin}"
 OB_SCRIPTS="$HOME/.config/openbox/scripts"
 GRID_CFG="$HOME/.config/ob-grid/config.toml"
 
+if ! /usr/bin/python3 -c 'import Xlib' 2>/dev/null; then
+	echo "Missing python-xlib for /usr/bin/python3 — install it: sudo pacman -S python-xlib" >&2
+	exit 1
+fi
+
 mkdir -p "$LOCAL_BIN" "$OB_SCRIPTS" "$(dirname "$GRID_CFG")" "$HOME/.config/ob-layout/presets"
 
 for tool in ob-grid ob-layout; do

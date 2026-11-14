@@ -1,4 +1,4 @@
-"""Frame rectangle ⇄ workarea-relative fractions. Pure — no Gtk import."""
+"""Frame rectangle ⇄ workarea-relative fractions. Pure — no X connection."""
 
 from __future__ import annotations
 

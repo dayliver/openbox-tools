@@ -20,7 +20,8 @@ Archcraft(CachyOS) Openbox 환경용 개인 도구 모음. 저장소 하나, 프
 
 ## 런타임이 다른 이유
 
-- `ob-windows`는 **시스템 `python3`** + pacman의 PyGObject(Gtk3/Wnck)를 쓴다. pip 의존성 없음.
+- `ob-windows`는 **시스템 `python3`** + pacman의 `python-xlib`만 쓴다. pip 의존성 없음.
+  키 한 번에 약 0.1초 (Gtk/Wnck를 쓰던 때는 약 0.5초).
 - `archcraft-keybinder`는 **`uv` venv**에 `textual`, `lxml`을 쓴다.
 
 키 입력마다 실행되는 쪽이 무거운 의존성에 묶이지 않도록 일부러 분리해 두었다.

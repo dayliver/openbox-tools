@@ -8,7 +8,8 @@ Openbox 창 도구 두 개를 담은 패키지. **상시 사용 코드**다: Ope
 ./install.sh
 ```
 
-요구 사항: 시스템 `python3`, `python-gobject`, `libwnck3`, `xorg-xprop`, `rofi`, `dunst`(알림).
+요구 사항: 시스템 `python3`, `python-xlib`, 그리고 ob-layout용 `rofi`, `dunst`(알림).
+EWMH를 지원하는 창 관리자(Openbox)의 X11 세션에서만 동작한다.
 
 ## ob-grid — 비율 격자 창 이동·크기 조절
 
@@ -65,7 +66,8 @@ Openbox 창 도구 두 개를 담은 패키지. **상시 사용 코드**다: Ope
 ```text
 ob_windows/
   rect.py            Rect (순수)
-  wm.py              X 서버와 닿는 유일한 모듈 — Wnck/Gdk: 활성 창, workarea, 프레임 적용, 최대화/최소화
+  wm.py              X 서버와 닿는 유일한 모듈 — python-xlib + EWMH: 활성 창, workarea, 프레임 적용,
+                     최대화/최소화, 워크스페이스
   grid/              cli, geometry(순수), config(순수)
   layout/            cli, actions, windows(창 열거·워크스페이스·cwd), ratio(순수), store(순수), launch(순수), rofi_ui
 bin/ob-grid, bin/ob-layout   시스템 python3로 위 모듈을 실행하는 래퍼
@@ -73,7 +75,8 @@ bin/ob-grid, bin/ob-layout   시스템 python3로 위 모듈을 실행하는 래
 
 ## 테스트
 
-순수 모듈만 테스트한다 (`wm.py`와 실제 창 이동은 손으로 확인).
+순수 모듈만 테스트한다. `wm.py`는 실제 X 세션이 필요해서 손으로 확인한다
+(`ob-grid info`로 창·workarea 값을 볼 수 있다).
 
 ```bash
 PYTHONPATH=. uvx pytest -q
