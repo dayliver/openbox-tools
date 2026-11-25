@@ -1,6 +1,8 @@
 # openbox-tools
 
-Archcraft(CachyOS) Openbox 환경용 개인 도구 모음. 저장소 하나, 프로그램 둘.
+CachyOS에 Archcraft Openbox 구성을 얹고 단축키와 창 배치를 개인화하는 도구 모음.
+
+[이 PC의 Archcraft 기본값 대비 변경과 다른 PC로 옮기는 절차](docs/desktop-profile.md)
 
 | 폴더 | 내용 | 성격 | 지우면 |
 |---|---|---|---|
