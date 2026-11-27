@@ -7,12 +7,20 @@ used first. Only the ID, alias and [info] fields are read; stored passwords
 are never touched.
 """
 import os
+import shutil
 import subprocess
 import sys
 import tomllib
 from pathlib import Path
 
-CONF = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config")) / "rustdesk"
+FLATPAK = "com.rustdesk.RustDesk"
+# A native `rustdesk` wins; otherwise use the Flatpak app and its own config.
+if shutil.which("rustdesk"):
+    COMMAND = ["rustdesk"]
+    CONF = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config")) / "rustdesk"
+else:
+    COMMAND = ["flatpak", "run", FLATPAK]
+    CONF = Path.home() / ".var/app" / FLATPAK / "config/rustdesk"
 THEMES = Path.home() / ".config/openbox/themes"
 ICON = "\U000f08b9"  # nf-md-remote_desktop
 
@@ -66,7 +74,7 @@ def menu(prompt, lines, *extra):
 
 
 def launch(*args):
-    subprocess.Popen(["rustdesk", *args], start_new_session=True,
+    subprocess.Popen([*COMMAND, *args], start_new_session=True,
                      stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
