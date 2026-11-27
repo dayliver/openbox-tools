@@ -60,6 +60,8 @@ EWMH를 지원하는 창 관리자(Openbox)의 X11 세션에서만 동작한다.
 - 저장은 창이 있는 모니터 기준, 복원은 **주 모니터** 기준이다 (멀티모니터에서 어긋남).
 - `alacritty_fullscreen`의 cwd 포함 실행 명령은 `ob-furminal` 내용을 `layout/launch.py`에
   복사해 둔 것이라, 그 스크립트를 고치면 여기도 고쳐야 한다.
+- `kitty_fullscreen`은 `ob-furminal --working-directory <경로>`로 복원한다. Kitty용
+  `ob-furminal` 래퍼는 받은 인수를 Kitty에 전달해야 한다.
 
 ## 구조
 

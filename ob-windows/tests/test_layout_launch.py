@@ -47,6 +47,16 @@ def test_cwd_with_spaces_is_quoted(tmp_path):
     assert cmd == f"kitty --working-directory '{d}'"
 
 
+def test_fullscreen_kitty_passes_cwd_to_furminal(tmp_path):
+    directory = tmp_path / "my project"
+    directory.mkdir()
+    command = launch.resolve_launch("Kitty_fullscreen")
+    assert command == "ob-furminal"
+    assert launch.build_launch_cmd(command, "Kitty_fullscreen", str(directory)) == (
+        f"ob-furminal --working-directory '{directory}'"
+    )
+
+
 def test_furminal_is_rebuilt_as_alacritty_with_cwd(tmp_path):
     cmd = launch.build_launch_cmd("ob-furminal", "alacritty_fullscreen", str(tmp_path))
     assert cmd.startswith("alacritty --class 'alacritty_fullscreen,alacritty_fullscreen'")

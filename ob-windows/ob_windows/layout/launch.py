@@ -11,6 +11,7 @@ CLASS_LAUNCH: dict[str, str] = {
     "Alacritty": "alacritty",
     "alacritty_fullscreen": "ob-furminal",
     "kitty": "kitty",
+    "kitty_fullscreen": "ob-furminal",
     "Thunar": "thunar",
     "firefox": "firefox",
     "Firefox": "firefox",
@@ -35,6 +36,7 @@ TERMINAL_CLASSES = {
     "alacritty",
     "alacritty_fullscreen",
     "kitty",
+    "kitty_fullscreen",
     "xfce4-terminal",
     "gnome-terminal",
     "org.gnome.terminal",
@@ -110,6 +112,9 @@ def build_launch_cmd(base: str, klass: str, cwd: str | None) -> str:
 
     k = klass.lower()
     q = shlex.quote(cwd)
+
+    if k == "kitty_fullscreen":
+        return f"{base} --working-directory {q}"
 
     # Maximized furminal wrapper has no cwd flag — rebuild alacritty cmdline.
     if k == "alacritty_fullscreen" or base.strip() == "ob-furminal":
