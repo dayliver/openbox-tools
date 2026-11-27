@@ -8,6 +8,7 @@ CachyOS에 Archcraft Openbox 구성을 얹고 단축키와 창 배치를 개인�
 |---|---|---|---|
 | `ob-windows/` | `ob-grid`(비율 격자 창 이동·크기 조절), `ob-layout`(워크스페이스 레이아웃 저장·복원) | **상시 사용** — Openbox 단축키가 누를 때마다 실행 | `Super+방향키`, `Super+Ctrl+방향키`, `Super+O`가 즉시 먹통 |
 | `archcraft-keybinder/` | `rc.xml` 단축키 조회·수정·기본값 복원 (TUI + CLI) | **편집 도구** — 직접 띄울 때만 실행 | 현재 단축키는 그대로 동작. 편집·복원 수단과 `kbinds.txt` 갱신만 사라짐 |
+| `shell/` | zsh 프롬프트 (Oh My Zsh `archcraft` 테마에 시각 추가)와 설치 스크립트 | **복사본** — 설치 시 `~/.oh-my-zsh/custom/themes/`로 복사 | 설치된 프롬프트는 그대로. 다른 PC로 옮길 원본만 사라짐 |
 
 상주 프로세스는 없고 `autostart`에서 호출되는 것도 없다.
 
@@ -16,6 +17,7 @@ CachyOS에 Archcraft Openbox 구성을 얹고 단축키와 창 배치를 개인�
 ```bash
 ./ob-windows/install.sh            # ~/.local/bin, ~/.config/openbox/scripts 에 심볼릭 링크
 ./archcraft-keybinder/install.sh   # uv sync
+./shell/install.sh                 # zsh 프롬프트 테마 복사 (선택)
 ```
 
 `ob-windows`의 링크는 이 폴더를 가리킨다. 폴더를 옮기면 `install.sh`를 다시 실행할 것.

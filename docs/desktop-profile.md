@@ -43,7 +43,7 @@ Alt+Shift 및 기타 단축키를 포함한 전체 목록은 대상 PC에서 `./
 - 전체화면 터미널은 `~/.config/openbox/scripts/ob-furminal`이다. 기본 Alacritty 래퍼를 아래 명령으로 바꿨다. Kitty의 `kitty_fullscreen` 클래스, 패딩 45, 불투명도 1.0, 글꼴 크기 14, 로그인 zsh를 사용한다. 전체화면이 Polybar를 가린다.
 - `~/.config/xfce4/helpers.rc`는 `TerminalEmulator=kitty`, `FileManager=Thunar`다. Thunar의 `Ctrl+.`와 **Open Terminal Here**는 `~/.config/Thunar/uca.xml`에서 `exo-open --working-directory %f --launch TerminalEmulator`를 실행한다. 따라서 현재 폴더에서 Kitty가 열린다. 다른 Thunar 메뉴 중 일부는 이 PC에 없다고 기록된 `archcraft-tcma`를 여전히 참조한다.
 - 사용자 MIME 기본값은 HTTP/HTTPS에 Chrome, 디렉터리에 Thunar, ZIP에 Xarchiver, JPEG/PNG/SVG에 feh다. 로컬 기본값의 SVG는 Viewnior였다. 연결은 대상 PC에 설치된 앱의 desktop ID로 적용한다.
-- 셸은 zsh이고 `~/.zshrc`는 Oh My Zsh의 `archcraft` 테마를 사용한다. 로컬 변경 기록에는 프롬프트에 시각을 추가한 이력이 있다. Kitty 폰트는 `JetBrainsMono Nerd Font`이고 색상은 테마 적용 시 바뀐다. Alacritty도 설치돼 있고 색상 파일이 남아 있다.
+- 셸은 zsh이고 `~/.zshrc`는 Oh My Zsh의 `archcraft` 테마를 사용한다. 프롬프트 맨 앞에 시각을 추가한 테마 파일과 설치 스크립트는 [`shell/`](../shell/README.md)에 있다. Kitty 폰트는 `JetBrainsMono Nerd Font`이고 색상은 테마 적용 시 바뀐다. Alacritty도 설치돼 있고 색상 파일이 남아 있다.
 
 ```bash
 #!/usr/bin/env bash
@@ -82,7 +82,7 @@ exec kitty --class kitty_fullscreen --start-as=fullscreen \
 
 1. 대상 PC에서 Openbox **X11** 세션을 준비하고 해당 에디션의 Archcraft 설정을 설치한다. 같은 외형을 재현하려면 본인이 확보한 Openbox Premium 패키지와 해당 테마·아이콘·폰트·배경을 준비한다. 일반판에서도 단축키와 창 도구를 적용할 수 있고 테마 선택지는 패키지마다 다르다. Openbox가 뜨면 사용자 설정을 백업하고 해당 버전의 `/etc/skel/.config/openbox`를 기준으로 변경을 적용한다. [Archcraft 공식 설치 및 설정 안내](https://wiki.archcraft.io/docs/window-managers/stacking-wm/openbox/)
 2. GitHub에서 저장소를 최종 보관 위치에 clone한다. `python-xlib`, `rofi`, `dunst`, `uv`를 준비하고 저장소 루트에서 `./ob-windows/install.sh` 및 `./archcraft-keybinder/install.sh`를 실행한다. 창 도구 링크가 체크아웃 경로를 가리키므로 이동 후에는 창 도구 설치 스크립트를 다시 실행한다.
-3. Kitty, zsh, 폰트를 준비하고 위 `ob-furminal`을 대상 PC의 Openbox 스크립트 폴더에 저장해 실행 권한을 준다. 메뉴와 XFCE 기본 앱을 수정한다. 단축키 표의 명령은 키바인더 CLI로 등록할 수 있고, 네이티브 동작은 기존 `rc.xml` 항목의 키나 액션을 수정한다. 예를 들어 `./archcraft-keybinder/run.sh set W-Left --cmd 'ob-grid move left'`로 바꾼다. 기존 키를 제거하거나 옮길 때는 `rm`을 사용할 수 있다. Rofi 키바인드 뷰어·RustDesk·전원 프로필·색 변경은 각 보조 스크립트와 리소스를 준비한 뒤 연결한다.
+3. Kitty, zsh, 폰트를 준비하고 `./shell/install.sh`로 프롬프트를 맞춘다. 이어서 위 `ob-furminal`을 대상 PC의 Openbox 스크립트 폴더에 저장해 실행 권한을 준다. 메뉴와 XFCE 기본 앱을 수정한다. 단축키 표의 명령은 키바인더 CLI로 등록할 수 있고, 네이티브 동작은 기존 `rc.xml` 항목의 키나 액션을 수정한다. 예를 들어 `./archcraft-keybinder/run.sh set W-Left --cmd 'ob-grid move left'`로 바꾼다. 기존 키를 제거하거나 옮길 때는 `rm`을 사용할 수 있다. Rofi 키바인드 뷰어·RustDesk·전원 프로필·색 변경은 각 보조 스크립트와 리소스를 준비한 뒤 연결한다.
 4. `themes/system.ini`의 장치값을 `ls /sys/class/power_supply /sys/class/backlight`, `ip -br link`, Openbox 세션의 `xrandr --query` 결과에 맞춘다. 원하는 테마, 패널, Picom, 벽지, 한글 입력기를 적용한다. 테마 변경 후에는 테마 스크립트가 다시 쓸 수 있는 Rofi·Kitty·Dunst 설정을 확인한다.
 5. Openbox에 로그인한 상태에서 `./archcraft-keybinder/run.sh conflicts`를 실행한 다음 `./archcraft-keybinder/run.sh apply`로 단축키 목록과 Openbox 설정을 갱신한다. `Super+Enter`, `Super+T`, `Super+A`, `Super+방향키`, `Super+Ctrl+방향키`, `Super+O`, Thunar의 `Ctrl+.`, Kitty 한글 전환을 확인한다. `ob-grid info`는 활성 창과 작업 영역을 확인할 때 쓸 수 있다.
 
