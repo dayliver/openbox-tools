@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ "${1:-}" == --menu ]]; then
+    cat <<'XML'
+<openbox_pipe_menu>
+  <item label="Screenshot Now"><action name="Execute"><command>ob-screenshot --now</command></action></item>
+  <item label="Screenshot In 5s"><action name="Execute"><command>ob-screenshot --in5</command></action></item>
+  <item label="Screenshot In 10s"><action name="Execute"><command>ob-screenshot --in10</command></action></item>
+  <item label="Screenshot Area"><action name="Execute"><command>ob-screenshot --area</command></action></item>
+  <item label="Screenshot Window"><action name="Execute"><command>ob-screenshot --win</command></action></item>
+</openbox_pipe_menu>
+XML
+    exit
+fi
+
+border='0.000,0.735,0.832'
+directory="$(xdg-user-dir PICTURES)/Screenshots"
+args=(-u -f png)
+case "${1:-}" in
+    --now) ;;
+    --win) args+=(-i "$(xdotool getactivewindow)") ;;
+    --area) args+=(-s -b 2 -c "$border,0.25" -l) ;;
+    --in5|--in10)
+        seconds=${1#--in}
+        for (( remaining=seconds; remaining>0; remaining-- )); do
+            dunstify -t 900 -h string:x-dunst-stack-tag:screenshottimer "Screenshot in $remaining" || true
+            sleep 1
+        done
+        ;;
+    *) exit 2 ;;
+esac
+
+mkdir -p "$directory"
+temporary=$(mktemp "$directory/.capture-XXXXXXXX")
+trap 'if [[ -e "$temporary" ]]; then unlink "$temporary"; fi' EXIT
+if ! maim "${args[@]}" > "$temporary" || [[ ! -s "$temporary" ]]; then
+    exit 1
+fi
+file="$directory/Screenshot_$(date +%Y-%m-%d-%H-%M-%S-%N).png"
+mv -- "$temporary" "$file"
+if xclip -selection clipboard -t image/png -i "$file"; then
+    summary='Screenshot saved and copied'
+else
+    summary='Screenshot saved'
+fi
+dunstify -u low -h string:x-dunst-stack-tag:obscreenshot "$summary" "$file" || true

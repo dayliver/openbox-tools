@@ -49,10 +49,10 @@ Alt+Shift 및 기타 단축키를 포함한 전체 목록은 대상 PC에서 `./
 #!/usr/bin/env bash
 exec kitty --class kitty_fullscreen --start-as=fullscreen \
     -o window_padding_width=45 -o background_opacity=1.0 -o font_size=14 \
-    /bin/zsh -l
+    "$@" /bin/zsh -l
 ```
 
-`ob-layout`에는 일반 `kitty`의 작업 디렉터리 복원 처리가 있지만 `kitty_fullscreen`은 지원 클래스 목록에 없다. 기존 `alacritty_fullscreen`의 작업 디렉터리 복원 분기에는 Alacritty 명령이 남아 있다. 다른 PC에서 전체화면 창을 포함한 프리셋을 옮길 때 이 차이를 확인한다. 멀티모니터에서는 저장 시 창이 있는 모니터를 기준으로 계산하고 복원 시 주 모니터를 기준으로 배치한다. [레이아웃 실행 로직](../ob-windows/ob_windows/layout/launch.py) · [창 도구 문서](../ob-windows/README.md)
+`ob-layout`은 일반 Kitty와 전체화면 Kitty의 작업 디렉터리를 복원한다. 전체화면은 `ob-furminal`에 `--working-directory`를 전달하므로 위 래퍼의 `"$@"`가 필요하다. 기존 `alacritty_fullscreen` 프리셋의 작업 디렉터리 복원에는 Alacritty가 필요하다. 멀티모니터에서는 저장 시 창이 있는 모니터를 기준으로 계산하고 복원 시 주 모니터를 기준으로 배치한다. [레이아웃 실행 로직](../ob-windows/ob_windows/layout/launch.py) · [창 도구 문서](../ob-windows/README.md)
 
 ## 외형, 패널, 세션 시작
 
@@ -68,10 +68,16 @@ exec kitty --class kitty_fullscreen --start-as=fullscreen \
 | 워크스페이스별 벽지 | `autostart`에 `workspace-wallpaper.sh` 호출이 있다. `workspace-wallpaper.py`는 Pillow와 Xlib을 사용한다. 현재 `~/.config/openbox/wallpapers/off` 표식이 있어 이 실험 기능은 꺼져 있다. |
 | 앱 메뉴 | `menu-*.xml`의 일부 pipemenu 호출이 기존 XML 엔티티에서 작성 당시 홈의 절대 경로로 바뀌었다. 경로와 실제 `pipemenus/` 파일, 패키지가 제공하는 `/usr/share/archcraft/openbox/pipemenus/`를 대상 PC 기준으로 확인한다. |
 
+`./desktop/ob-sync-thunar-theme --install`은 Archcraft의 스타일 적용과 벽지 팔레트 스크립트에 Thunar 색상 연동을 추가한다. Kitty의 `colors.conf`에서 배경색과 글자색을 읽고 Thunar의 파일 목록, 메뉴·주소·상태 표시줄, 사이드바와 탭에 적용한다. 활성 탭과 선택 영역은 해당 스타일의 Rofi 팔레트에서 강조색을 가져온다. 스타일에서 지정한 GTK 테마가 없으면 설치된 `Arc-Dark`를 사용한다. Archcraft 패키지 업데이트로 사용자 스타일 스크립트를 교체했다면 설치 명령을 다시 실행한다.
+
+`./desktop/ob-sync-thunar-theme --install-geany`는 같은 팔레트로 Geany의 GTK 인터페이스와 편집기 색상표를 맞춘다. 설치 시 `cc`, `pkg-config`, Geany 개발 헤더가 필요하다. Geany를 열면 플러그인이 로드되며, 이후 스타일 변경 시 열려 있는 편집기의 색상표를 갱신한다.
+
 `~/.config/openbox/environment`는 패키지 기본값과 같고 Openbox 스크립트 폴더를 PATH 앞에 추가한다. 공개 저장소에서 사용할 파일을 만들 때 이 경로 동작을 이용하면 원래 설치 경로나 사용자 이름에 의존하는 링크를 줄일 수 있다.
 
 ## 입력기와 기기 설정
 
+- 현재 삼성 랩톱의 화면 밝기는 기존 Fn 키에서 `desktop/ob-brightness`를 호출해 조절한다. 키보드 백라이트의 `Fn+F9`는 삼성 커널 드라이버가 처리하고, 보조 키 `Super+Alt+Shift+PageUp/PageDown`은 `brightnessctl`로 밝기 단계를 바꾼다. 물리적인 점등은 조도 센서의 영향을 받을 수 있다. 잠금은 `Super+Ctrl+L`과 Openbox 전원 메뉴에서 호출하고 `xss-lock`이 절전 앞에서 잠금을 처리한다.
+- `Super+Shift+M`은 ARandR와 Autorandr의 디스플레이 프로필 메뉴를 연다. 노트북 화면 배치는 `laptop`으로 저장되어 있다. `Super+N`은 Wi‑Fi 메뉴, `Super+B`는 Bluetooth 메뉴를 실행한다.
 - 한글은 Fcitx5 + Hangul이다. Openbox `autostart`에서 `fcitx5 -d`를 실행하고 `~/.xprofile`, `~/.config/environment.d/fcitx.conf`에 `GTK_IM_MODULE=fcitx`, `QT_IM_MODULE=fcitx`, `XMODIFIERS=@im=fcitx`, `GLFW_IM_MODULE=ibus`를 둔다. 마지막 값은 Kitty/GLFW에 사용하는 설정이다. 현재 프로필에는 `keyboard-us`와 `hangul`이 있고 기존 기록의 전환 키는 Ctrl+Space, 오른쪽 Alt, Hangul이다.
 - 전원 메뉴의 Rofi 스크립트와 Openbox pipemenu는 절전 전 음악 정지·음소거 실패가 절전을 막지 않도록 바뀌었다. Rofi는 logind에 최대 절전 지원 여부를 물어보고 지원하지 않으면 알림을 띄운다.
 - 이 노트북의 `/etc/systemd/logind.conf.d/50-laptop.conf`는 덮개를 닫거나 전원 버튼을 누르면 절전, 도킹 중 덮개를 닫으면 무시하도록 설정돼 있다. Xfce Power Manager의 `logind-handle-lid-switch`는 true다. `Super+Shift+P`는 사용자 스크립트와 전원 프로필 서비스가 필요하다.

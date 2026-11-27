@@ -1,0 +1,354 @@
+#!/usr/bin/env python3
+"""Apply the Archcraft palette to Thunar and Geany."""
+
+import argparse
+import os
+from pathlib import Path
+import re
+import shlex
+import subprocess
+import sys
+
+CONFIG = Path(os.environ.get("XDG_CONFIG_HOME") or Path.home() / ".config")
+DATA = Path(os.environ.get("XDG_DATA_HOME") or Path.home() / ".local/share")
+THEME_PREFIX = "Openbox-Tools-Thunar"
+SETTING = ("xfconf-query", "-c", "xsettings", "-p", "/Net/ThemeName")
+GENERATED = re.compile(rf"{THEME_PREFIX}-[12]-(.+)")
+GEANY = CONFIG / "geany"
+GEANY_PLUGIN = GEANY / "plugins/openbox-palette.so"
+GEANY_SCHEME = GEANY / "colorschemes/openbox-tools.conf"
+
+
+def find_base(name):
+    if match := GENERATED.fullmatch(name):
+        name = match[1]
+    directories = (Path.home() / ".themes", DATA / "themes", Path("/usr/share/themes"))
+    for candidate in (name, "Arc-Dark"):
+        if not candidate or Path(candidate).name != candidate:
+            continue
+        for directory in directories:
+            theme = directory / candidate
+            if (theme / "gtk-3.0/gtk.css").is_file():
+                return theme
+    raise ValueError(f"No GTK 3 theme found for {name!r} or Arc-Dark")
+
+
+def kitty_palette():
+    directory = Path(os.environ.get("KITTY_CONFIG_DIRECTORY") or CONFIG / "kitty")
+    colors = dict(re.findall(
+        r"^\s*(background|foreground|color\d+)[ \t]+(#[0-9a-fA-F]{6})[ \t]*$",
+        (directory / "colors.conf").read_text(),
+        re.MULTILINE,
+    ))
+    if not {"background", "foreground"} <= colors.keys():
+        raise ValueError("Kitty colors.conf must define a hex background and foreground")
+    return colors
+
+
+def style_accent(fallback):
+    themes = CONFIG / "openbox/themes"
+    try:
+        style = (themes / ".current").read_text().strip()
+        palette = (themes / style / "rofi/shared/colors.rasi").read_text()
+    except FileNotFoundError:
+        return fallback
+    selected = re.search(r"^\s*selected:\s*(#[0-9a-fA-F]{6});", palette, re.MULTILINE)
+    return selected[1] if selected else fallback
+
+
+def accent_text(accent):
+    channels = [int(accent[i:i + 2], 16) / 255 for i in (1, 3, 5)]
+    linear = [c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4 for c in channels]
+    luminance = sum(value * weight for value, weight in zip(linear, (0.2126, 0.7152, 0.0722)))
+    return "#111111" if luminance > 0.179 else "#ffffff"
+
+
+def link_asset(link, target):
+    if link.is_symlink() and link.readlink() == target:
+        return
+    if link.is_symlink():
+        link.unlink()
+    if target.exists():
+        link.symlink_to(target)
+
+
+def install_geany():
+    flags = subprocess.check_output(["pkg-config", "--cflags", "--libs", "geany"], text=True)
+    GEANY_PLUGIN.parent.mkdir(parents=True, exist_ok=True)
+    output = GEANY_PLUGIN.with_suffix(".so.new")
+    source = Path(__file__).resolve().with_name("geany-palette.c")
+    subprocess.run(
+        ["cc", "-shared", "-fPIC", "-o", str(output), str(source), *shlex.split(flags)],
+        check=True,
+    )
+    output.replace(GEANY_PLUGIN)
+
+    session = GEANY / "session.conf"
+    contents = session.read_text() if session.exists() else ""
+    start, _, after = ("\n" + contents).partition("\n[plugins]\n")
+    plugins, next_section, tail = after.partition("\n[")
+    active = re.search(r"^active_plugins=(.*)$", plugins, re.MULTILINE)
+    paths = [path for path in (active[1].split(";") if active else []) if path]
+    if str(GEANY_PLUGIN) not in paths:
+        paths.append(str(GEANY_PLUGIN))
+    plugins = re.sub(r"^(load_plugins|active_plugins)=.*\n?", "", plugins, flags=re.MULTILINE)
+    session.write_text(
+        f"{start.strip()}\n\n[plugins]\nload_plugins=true\nactive_plugins={';'.join(paths)};\n"
+        f"{plugins.lstrip()}{next_section}{tail}"
+    )
+
+
+def sync_geany(colors, accent):
+    background, foreground = colors["background"], colors["foreground"]
+    # Use the regular ANSI colors on light styles and bright colors on dark styles.
+    offset = 8 if accent_text(background) == "#ffffff" else 0
+    red, green, yellow, blue, purple, cyan = (
+        colors.get(f"color{offset + index}", foreground) for index in range(1, 7)
+    )
+    muted = colors.get("color8", foreground)
+    channels = zip(bytes.fromhex(background[1:]), bytes.fromhex(foreground[1:]))
+    subtle = "#" + "".join(f"{round(bg * 0.90 + fg * 0.10):02x}" for bg, fg in channels)
+    selected = accent_text(accent)
+    styles = {
+        "default": f"{foreground};{background};false;false",
+        "selection": f"{selected};{accent};true;true",
+        "current_line": f"{foreground};{subtle};true",
+        "margin_line_number": f"{muted};{background}",
+        "margin_folding": f"{muted};{background}",
+        "fold_symbol_highlight": background,
+        "indent_guide": muted,
+        "caret": foreground,
+        "white_space": f"{muted};{background};true;false",
+        "error": f"{accent_text(red)};{red}",
+        "brace_good": f"{green};{subtle};true",
+        "brace_bad": f"{red};{subtle};true",
+        "marker_line": f"{selected};{accent}",
+        "marker_search": f"{selected};{accent}",
+        "marker_mark": f"{selected};{accent}",
+        "call_tips": f"{foreground};{subtle}",
+        "comment": muted,
+        "comment_doc": muted,
+        "number": purple,
+        "number_3": purple,
+        "type": f"{yellow};;true",
+        "function": blue,
+        "annotation": cyan,
+        "keyword": f"{red};;true",
+        "keyword_2": f"{purple};;true",
+        "string": green,
+        "string_2": cyan,
+        "string_eol": f"{red};{subtle}",
+        "preprocessor": cyan,
+        "operator": foreground,
+        "other": yellow,
+        "line_added": f"{green};{background}",
+        "line_removed": f"{red};{background}",
+        "line_changed": f"{purple};{background}",
+    }
+    GEANY_SCHEME.parent.mkdir(parents=True, exist_ok=True)
+    GEANY_SCHEME.write_text(
+        "[theme_info]\nname=Archcraft Palette\ndescription=Current Archcraft desktop palette\n\n"
+        "[named_styles]\n" + "".join(f"{name}={value}\n" for name, value in styles.items())
+    )
+    config = GEANY / "geany.conf"
+    previous = config.read_text() if config.exists() else ""
+    contents = previous or "[geany]\n"
+    value = f"color_scheme={GEANY_SCHEME.name}"
+    if re.search(r"^color_scheme=", contents, re.MULTILINE):
+        contents = re.sub(r"^color_scheme=.*$", value, contents, flags=re.MULTILINE)
+    else:
+        contents = contents.replace("[geany]\n", f"[geany]\n{value}\n", 1)
+    if contents != previous:
+        config.write_text(contents)
+
+
+def sync(base_name):
+    current = subprocess.check_output(SETTING, text=True).strip()
+    base = find_base(base_name or current)
+    colors = kitty_palette()
+    background, foreground = colors["background"], colors["foreground"]
+    accent = style_accent(foreground)
+    if GEANY_PLUGIN.is_file():
+        sync_geany(colors, accent)
+    # GTK reloads the named theme when XSettings changes. Keep the current
+    # variant intact while writing the next one, including on palette changes.
+    variant = 2 if current == f"{THEME_PREFIX}-1-{base.name}" else 1
+    name = f"{THEME_PREFIX}-{variant}-{base.name}"
+    theme = DATA / "themes" / name
+    gtk = theme / "gtk-3.0"
+    gtk.mkdir(parents=True, exist_ok=True)
+    link_asset(gtk / "base", base / "gtk-3.0")
+    link_asset(gtk / "gtk.gresource", base / "gtk-3.0/gtk.gresource")
+    for version in ("gtk-2.0", "gtk-4.0"):
+        link_asset(theme / version, base / version)
+    for filename in ("gtk.css", "gtk-dark.css"):
+        source = filename if (base / "gtk-3.0" / filename).exists() else "gtk.css"
+        (gtk / filename).write_text(
+            f'@import url("base/{source}");\n\n'
+            f"@define-color ob_thunar_divider mix({background}, {foreground}, 0.18);\n\n"
+            "window.thunar.background,\n"
+            ".thunar scrolledwindow.standard-view,\n"
+            ".thunar .standard-view .view,\n"
+            ".thunar menubar,\n"
+            ".thunar toolbar,\n"
+            ".thunar toolbar entry,\n"
+            ".thunar notebook > header,\n"
+            ".thunar notebook > header > tabs > tab,\n"
+            ".thunar .standard-view treeview.view header button,\n"
+            ".thunar statusbar,\n"
+            ".thunar .sidebar,\n"
+            ".thunar .sidebar viewport,\n"
+            ".thunar .sidebar list,\n"
+            ".thunar .sidebar row:not(:selected):not(:hover),\n"
+            ".thunar scrolledwindow.sidebar treeview.view,\n"
+            "window#GeanyMainWindow,\n"
+            "#GeanyMenubar,\n"
+            "#GeanyToolbar,\n"
+            "#GeanyMainWindow notebook > header,\n"
+            "#GeanyMainWindow notebook > header > tabs > tab,\n"
+            "#GeanyMainWindow notebook > stack,\n"
+            "#GeanyMainWindow scrolledwindow viewport,\n"
+            "#GeanyMainWindow treeview.view,\n"
+            "#GeanyMainWindow textview,\n"
+            "#GeanyMainWindow textview text,\n"
+            "#GeanyMainWindow statusbar {\n"
+            "    background-image: none;\n"
+            f"    background-color: {background};\n"
+            f"    color: {foreground};\n"
+            "}\n\n"
+            ".thunar paned > separator,\n"
+            "#GeanyMainWindow paned > separator {\n"
+            "    background-image: linear-gradient(@ob_thunar_divider, @ob_thunar_divider);\n"
+            "}\n"
+            ".thunar paned > separator.wide,\n"
+            "#GeanyMainWindow paned > separator.wide {\n"
+            "    background-color: @ob_thunar_divider;\n"
+            "}\n"
+            ".thunar paned > separator:selected {\n"
+            f"    background-image: linear-gradient({accent}, {accent});\n"
+            "}\n"
+            ".thunar scrolledwindow.standard-view,\n"
+            ".thunar scrolledwindow.sidebar,\n"
+            ".thunar statusbar,\n"
+            ".thunar statusbar frame > border,\n"
+            "#GeanyMainWindow scrolledwindow.frame,\n"
+            "#GeanyMainWindow statusbar {\n"
+            "    border-color: @ob_thunar_divider;\n"
+            "    border-image: none;\n"
+            "}\n\n"
+            ".thunar notebook > header.top > tabs > tab:checked,\n"
+            "#GeanyMainWindow notebook > header.top > tabs > tab:checked {\n"
+            f"    box-shadow: inset 0 -2px {accent};\n"
+            "}\n\n"
+            "#GeanyMainWindow notebook > header.bottom > tabs > tab:checked {\n"
+            f"    box-shadow: inset 0 2px {accent};\n"
+            "}\n"
+            "#GeanyMainWindow notebook > header.left > tabs > tab:checked {\n"
+            f"    box-shadow: inset -2px 0 {accent};\n"
+            "}\n"
+            "#GeanyMainWindow notebook > header.right > tabs > tab:checked {\n"
+            f"    box-shadow: inset 2px 0 {accent};\n"
+            "}\n\n"
+            "dialog#GeanyDialogSearch,\n"
+            "#GeanyMainWindow entry:not(#geany-search-entry-no-match),\n"
+            "#GeanyDialogSearch entry:not(#geany-search-entry-no-match),\n"
+            "#GeanyDialogSearch combobox button {\n"
+            "    background-image: none;\n"
+            "    border-color: @ob_thunar_divider;\n"
+            f"    background-color: {background};\n"
+            f"    color: {foreground};\n"
+            "}\n"
+            "#GeanyMainWindow entry:not(#geany-search-entry-no-match):focus,\n"
+            "#GeanyDialogSearch entry:not(#geany-search-entry-no-match):focus {\n"
+            f"    box-shadow: inset 0 0 0 1px {accent};\n"
+            "}\n\n"
+            "#GeanyMainWindow scrollbar,\n"
+            "#GeanyMainWindow scrollbar trough {\n"
+            "    background-image: none;\n"
+            "    border-color: @ob_thunar_divider;\n"
+            f"    background-color: {background};\n"
+            "}\n"
+            "#GeanyMainWindow scrollbar slider {\n"
+            "    background-image: none;\n"
+            f"    background-color: mix({background}, {foreground}, 0.45);\n"
+            "}\n"
+            "#GeanyMainWindow scrollbar slider:hover {\n"
+            f"    background-color: mix({background}, {foreground}, 0.60);\n"
+            "}\n"
+            "#GeanyMainWindow scrollbar slider:active {\n"
+            f"    background-color: {accent};\n"
+            "}\n"
+            "#GeanyMainWindow scrollbar slider:disabled {\n"
+            "    background-color: transparent;\n"
+            "}\n\n"
+            ".thunar .standard-view .view:selected,\n"
+            ".thunar scrolledwindow.sidebar treeview.view:selected,\n"
+            ".thunar scrolledwindow.sidebar treeview.view:active,\n"
+            ".thunar .sidebar row:selected,\n"
+            ".thunar menubar > menuitem:hover,\n"
+            ".thunar toolbar entry selection,\n"
+            "#GeanyMenubar > menuitem:hover,\n"
+            "#GeanyMainWindow entry:not(#geany-search-entry-no-match) selection,\n"
+            "#GeanyDialogSearch entry:not(#geany-search-entry-no-match) selection,\n"
+            "#GeanyMainWindow textview text selection,\n"
+            "#GeanyMainWindow treeview.view:selected {\n"
+            "    background-image: none;\n"
+            f"    background-color: {accent};\n"
+            f"    color: {accent_text(accent)};\n"
+            "}\n",
+        )
+    subprocess.run((*SETTING, "-s", name), check=True)
+    print(f"Thunar palette: {background}, accent {accent} ({base.name})")
+
+
+def install():
+    openbox = CONFIG / "openbox"
+    helper = openbox / "scripts/ob-sync-thunar-theme"
+    helper.parent.mkdir(parents=True, exist_ok=True)
+    target = Path(__file__).resolve()
+    if not helper.is_symlink() or helper.resolve() != target:
+        helper.symlink_to(target)
+
+    command = f'"$HOME/.config/openbox/scripts/{helper.name}"'
+    theme_setting = '\txfconf-query -c xsettings -p /Net/ThemeName -s "$gtk_theme"'
+    hooks = (
+        ("apply.sh", theme_setting, f'\t{command} "$gtk_theme" || {theme_setting.strip()}'),
+        ("random.sh", "apply_terminal", f"apply_terminal\n{command}"),
+    )
+    updated = 0
+    themes = (openbox / "themes").resolve()
+    for filename, anchor, replacement in hooks:
+        for script in sorted({path.resolve() for path in themes.glob(f"*/{filename}")}):
+            if not script.is_relative_to(themes):
+                continue
+            contents = script.read_text()
+            if command in contents:
+                continue
+            pattern = rf"^{re.escape(anchor)}$"
+            contents, count = re.subn(pattern, lambda _: replacement, contents, flags=re.MULTILINE)
+            if count == 1:
+                script.write_text(contents)
+                updated += 1
+    print(f"Connected {updated} theme scripts")
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--install", action="store_true", help="Connect Archcraft theme scripts")
+    parser.add_argument("--install-geany", action="store_true", help="Enable Geany's live palette plugin")
+    parser.add_argument("base_theme", nargs="?", help="GTK theme requested by the current style")
+    args = parser.parse_args()
+    try:
+        if args.install:
+            install()
+        if args.install_geany:
+            install_geany()
+        sync(args.base_theme)
+    except (OSError, ValueError, subprocess.CalledProcessError) as exc:
+        print(f"{parser.prog}: {exc}", file=sys.stderr)
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

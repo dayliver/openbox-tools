@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+set -euo pipefail
+shopt -s nullglob
+
+if [[ "${1:-}" == --keyboard ]]; then
+    shift
+    devices=(/sys/class/leds/*kbd_backlight*)
+    label='Keyboard backlight'
+    step=1
+    minimum=0
+else
+    devices=(/sys/class/backlight/*)
+    label='Display brightness'
+    step=5%
+fi
+if (( ${#devices[@]} == 0 )); then
+    printf '%s device unavailable\n' "$label" >&2
+    exit 1
+fi
+device=${devices[0]##*/}
+control=(brightnessctl --device="$device")
+maximum=$("${control[@]}" max)
+minimum=${minimum:-$(( (maximum + 19) / 20 ))}
+
+case "${1:---get}" in
+    --get)
+        "${control[@]}" --machine-readable info | cut -d, -f4
+        exit
+        ;;
+    --inc) value="$step+" ;;
+    --dec) value="$step-" ;;
+    --toggle)
+        if (( minimum != 0 )); then exit 2; fi
+        if [[ $("${control[@]}" get) == 0 ]]; then value=100%; else value=0; fi
+        ;;
+    *) printf 'Usage: %s [--keyboard] [--get|--inc|--dec|--toggle]\n' "$0" >&2; exit 2 ;;
+esac
+
+"${control[@]}" --quiet --min-value="$minimum" set "$value"
+percent=$("${control[@]}" --machine-readable info | cut -d, -f4)
+dunstify -u low -h "string:x-dunst-stack-tag:ob-backlight-$device" \
+    -h "int:value:${percent%\%}" "$label" "$percent" || true

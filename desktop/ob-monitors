@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+set -euo pipefail
+menu() { rofi -dmenu -i -p "$1" "${@:2}"; }
+
+options=('Arrange displays' 'Save current layout' 'Restore saved layout' 'Apply matching layout')
+choice=$(printf '%s\n' "${options[@]}" | menu 'Displays' -no-custom) || exit 0
+case "$choice" in
+    "${options[0]}") exec arandr ;;
+    "${options[1]}")
+        name=$(menu 'Profile name' </dev/null) || exit 0
+        [[ "$name" =~ ^[A-Za-z0-9][A-Za-z0-9_-]*$ ]] || exit 1
+        autorandr --save "$name"
+        ;;
+    "${options[2]}")
+        name=$(autorandr --list | sed 's/ (.*)$//' | menu 'Restore layout' -no-custom) || exit 0
+        autorandr --load "$name"
+        ;;
+    "${options[3]}")
+        autorandr --change
+        ;;
+esac

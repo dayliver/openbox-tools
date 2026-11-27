@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+case "${1:---lock}" in
+    --lock) exec loginctl lock-session ;;
+    --suspend) exec systemctl suspend ;;
+    --screen)
+        openbox="$HOME/.config/openbox"
+        style=$(cat "$openbox/themes/.current")
+        color=$(sed -nE "s/^background=['\"]#([[:xdigit:]]{6})['\"]$/\1/p" \
+            "$openbox/themes/$style/theme.bash")
+        exec i3lock --nofork --color="${color:-222d32}"
+        ;;
+    *) exit 2 ;;
+esac
