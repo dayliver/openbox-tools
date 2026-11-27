@@ -34,7 +34,8 @@ normalize() {
     awk -v v="$1" 'BEGIN { if (v < 0.1 || v > 1) exit 1; printf "%.2f\n", v }'
 }
 
-reload() { pkill -USR1 -x picom 2>/dev/null || true; }
+# picom watches its config file and reloads on every change. Sending SIGUSR1 as
+# well can arrive in the middle of that reload and kill picom, so don't.
 
 set_value() {
     local which=$1 value
@@ -65,7 +66,6 @@ install() {
             done = 1; next
         }
         { print }' "$conf" > "$conf.tmp" && mv "$conf.tmp" "$conf"
-    reload
     echo "installed in $conf"
 }
 
@@ -94,7 +94,6 @@ interactive() {
             1) value=$(pick_level Inactive "$inactive") || continue; set_value inactive "$value" ;;
             2) set_value active "$default_active"; set_value inactive "$default_inactive" ;;
         esac
-        reload
     done
 }
 
@@ -103,7 +102,7 @@ case "${1:-}" in
     get) require_installed; echo "active $(get active)"; echo "inactive $(get inactive)" ;;
     active|inactive)
         [[ $# -eq 2 ]] || die "usage: ob-opacity $1 VALUE"
-        require_installed; set_value "$1" "$2"; reload ;;
+        require_installed; set_value "$1" "$2" ;;
     "") require_installed; interactive ;;
     *) die "usage: ob-opacity [--install | get | active VALUE | inactive VALUE]" ;;
 esac

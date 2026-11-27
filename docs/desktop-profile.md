@@ -77,7 +77,7 @@ exec kitty --class kitty_fullscreen --start-as=fullscreen \
 ## 입력기와 기기 설정
 
 - 현재 삼성 랩톱의 화면 밝기는 기존 Fn 키에서 `desktop/ob-brightness`를 호출해 조절한다. 키보드 백라이트의 `Fn+F9`는 삼성 커널 드라이버가 처리하고, 보조 키 `Super+Alt+Shift+PageUp/PageDown`은 `brightnessctl`로 밝기 단계를 바꾼다. 물리적인 점등은 조도 센서의 영향을 받을 수 있다. 잠금은 `Super+Ctrl+L`과 Openbox 전원 메뉴에서 호출하고 `xss-lock`이 절전 앞에서 잠금을 처리한다.
-- `Super+I`는 `desktop/ob-opacity`의 Rofi 메뉴를 열어 활성 창과 비활성 창의 투명도를 고른다. 값은 `picom.conf`의 `# ob-opacity:active`, `# ob-opacity:inactive` 줄에 기록되고, picom은 `SIGUSR1` 신호로 바로 다시 읽는다. 터미널에서는 `ob-opacity inactive 0.9`처럼 값을 바로 지정하거나 `ob-opacity get`으로 현재 값을 확인할 수 있다. 새 PC에서는 `./desktop/ob-opacity --install`로 규칙을 추가한다.
+- `Super+I`는 `desktop/ob-opacity`의 Rofi 메뉴를 열어 활성 창과 비활성 창의 투명도를 고른다. 값은 `picom.conf`의 `# ob-opacity:active`, `# ob-opacity:inactive` 줄에 기록되고, picom은 설정 파일이 바뀌면 스스로 다시 읽으므로 따로 신호를 보내지 않는다. 터미널에서는 `ob-opacity inactive 0.9`처럼 값을 바로 지정하거나 `ob-opacity get`으로 현재 값을 확인할 수 있다. 새 PC에서는 `./desktop/ob-opacity --install`로 규칙을 추가한다.
 - `Super+Shift+R`은 `desktop/ob-rustdesk` 메뉴를 연다. RustDesk의 즐겨찾기(`RustDesk_local.toml`의 `fav`)를 먼저 보여 주고, 이어서 `~/.config/rustdesk/peers/*.toml`의 세션을 최근 사용 순으로 보여 준다. 고르면 `rustdesk --connect <ID>`로 접속한다. 목록 아래 `Connect to ID…`는 ID를 직접 입력하고, `Open RustDesk`는 본 창을 연다. 저장된 비밀번호는 읽지 않는다.
 - `Super+Shift+M`은 ARandR와 Autorandr의 디스플레이 프로필 메뉴를 연다. 노트북 화면 배치는 `laptop`으로 저장되어 있다. `Super+N`은 Wi‑Fi 메뉴, `Super+B`는 Bluetooth 메뉴를 실행한다.
 - 한글은 Fcitx5 + Hangul이다. Openbox `autostart`에서 `fcitx5 -d`를 실행하고 `~/.xprofile`, `~/.config/environment.d/fcitx.conf`에 `GTK_IM_MODULE=fcitx`, `QT_IM_MODULE=fcitx`, `XMODIFIERS=@im=fcitx`, `GLFW_IM_MODULE=ibus`를 둔다. 마지막 값은 Kitty/GLFW에 사용하는 설정이다. 현재 프로필에는 `keyboard-us`와 `hangul`이 있고 기존 기록의 전환 키는 Ctrl+Space, 오른쪽 Alt, Hangul이다.
