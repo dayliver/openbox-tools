@@ -1,0 +1,109 @@
+#!/usr/bin/env bash
+# Pick picom opacity for the focused and unfocused windows from a Rofi menu.
+#
+#   ob-opacity                     menu (loops until Esc, changes apply live)
+#   ob-opacity active|inactive N   set one value, e.g. `ob-opacity inactive 0.9`
+#   ob-opacity get                 print the current values
+#   ob-opacity --install           add the managed rules to picom.conf
+set -euo pipefail
+export LC_ALL=C
+
+conf="${PICOM_CONF:-$HOME/.config/picom.conf}"
+levels=(1.00 0.97 0.95 0.92 0.90 0.85 0.80 0.75 0.70)
+default_active=1.00
+default_inactive=0.92
+
+die() { echo "ob-opacity: $*" >&2; command -v notify-send >/dev/null && notify-send -u critical ob-opacity "$*"; exit 1; }
+# Same look as Super+N: the current Archcraft style's network menu theme,
+# plus a message row (styled like the power menu) for hints.
+themes="$HOME/.config/openbox/themes"
+rasi="$themes/$(cat "$themes/.current" 2>/dev/null || echo default)/rofi/networkmenu.rasi"
+theme_args=()
+if [[ -f "$rasi" ]]; then
+    theme_args=(-theme "$rasi" -theme-str 'textbox-prompt-colon { str: ""; }
+        mainbox { children: [ "inputbar", "message", "listview" ]; }
+        message { padding: 12px; border-radius: 12px; background-color: @background-alt; text-color: @foreground; }
+        textbox { background-color: inherit; text-color: inherit; }')
+fi
+menu() { rofi -dmenu -i -p "$1" "${theme_args[@]}" "${@:2}"; }
+
+get() { sed -nE "s/^[[:space:]]*opacity = ([0-9.]+);[[:space:]]*# ob-opacity:$1[[:space:]]*$/\1/p" "$conf"; }
+
+normalize() {
+    [[ "$1" =~ ^(0?\.[0-9]+|[01](\.[0-9]+)?)$ ]] || return 1
+    awk -v v="$1" 'BEGIN { if (v < 0.1 || v > 1) exit 1; printf "%.2f\n", v }'
+}
+
+reload() { pkill -USR1 -x picom 2>/dev/null || true; }
+
+set_value() {
+    local which=$1 value
+    value=$(normalize "$2") || die "opacity must be between 0.10 and 1.00: $2"
+    sed -i -E "s/^([[:space:]]*opacity = )[0-9.]+(;[[:space:]]*# ob-opacity:$which[[:space:]]*)$/\1$value\2/" "$conf"
+}
+
+install() {
+    if [[ -n "$(get active)" && -n "$(get inactive)" ]]; then
+        echo "already installed in $conf"; return
+    fi
+    grep -qE '^rules: \(\{[[:space:]]*$' "$conf" || die "no 'rules: ({' line in $conf"
+    cp "$conf" "$conf.bak-$(date +%Y%m%d%H%M%S)"
+    awk -v a="$default_active" -v i="$default_inactive" '
+        !done && /^rules: \(\{[[:space:]]*$/ {
+            print
+            print "  # ob-opacity: values below are rewritten by `ob-opacity`."
+            print "  match = \"(window_type = '\''normal'\'' || window_type = '\''dialog'\'') && focused\";"
+            print "  opacity = " a "; # ob-opacity:active"
+            print "}, {"
+            print "  match = \"(window_type = '\''normal'\'' || window_type = '\''dialog'\'') && !focused\";"
+            print "  opacity = " i "; # ob-opacity:inactive"
+            print "}, {"
+            print "  # Keep video, fullscreen and Rofi menus opaque whatever the values above are."
+            print "  match = \"fullscreen || class_g = '\''mpv'\'' || class_g ?= '\''rofi'\''\";"
+            print "  opacity = 1.0;"
+            print "}, {"
+            done = 1; next
+        }
+        { print }' "$conf" > "$conf.tmp" && mv "$conf.tmp" "$conf"
+    reload
+    echo "installed in $conf"
+}
+
+require_installed() {
+    [[ -f "$conf" ]] || die "$conf not found"
+    [[ -n "$(get active)" && -n "$(get inactive)" ]] || die "managed rules missing; run: ob-opacity --install"
+}
+
+pick_level() {
+    local label=$1 current=$2 choice
+    choice=$(printf '%s\n' "${levels[@]}" |
+        menu "$label opacity" -select "$current" -mesg "Current: $current  (type any value 0.10-1.00)") || return 1
+    normalize "$choice" || die "opacity must be between 0.10 and 1.00: $choice"
+}
+
+interactive() {
+    local active inactive choice value opts
+    while true; do
+        active=$(get active); inactive=$(get inactive)
+        opts=("Active window      $active"
+              "Inactive window    $inactive"
+              "Reset              $default_active / $default_inactive")
+        choice=$(printf '%s\n' "${opts[@]}" | menu 'Opacity' -no-custom -format i) || exit 0
+        case "$choice" in
+            0) value=$(pick_level Active "$active") || continue; set_value active "$value" ;;
+            1) value=$(pick_level Inactive "$inactive") || continue; set_value inactive "$value" ;;
+            2) set_value active "$default_active"; set_value inactive "$default_inactive" ;;
+        esac
+        reload
+    done
+}
+
+case "${1:-}" in
+    --install) [[ -f "$conf" ]] || die "$conf not found"; install ;;
+    get) require_installed; echo "active $(get active)"; echo "inactive $(get inactive)" ;;
+    active|inactive)
+        [[ $# -eq 2 ]] || die "usage: ob-opacity $1 VALUE"
+        require_installed; set_value "$1" "$2"; reload ;;
+    "") require_installed; interactive ;;
+    *) die "usage: ob-opacity [--install | get | active VALUE | inactive VALUE]" ;;
+esac

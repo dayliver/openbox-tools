@@ -28,7 +28,7 @@
 | Super+1…5 → Super+F1…F5 | `GoToDesktop`의 `<to>1…5</to>`. 숫자 키 바인딩 제거 |
 | Super+Shift+1…5 → Super+Shift+F1…F5 | `SendToDesktop`의 `<desktop>1…5</desktop>`. 숫자 키 바인딩 제거 |
 | Ctrl+Shift+R → Super+Ctrl+R | `dunstify` 알림을 띄운 뒤 `Reconfigure`. 브라우저의 Ctrl+Shift+R을 돌려줌 |
-| Super+Shift+R | 새 바인딩 → `rofi-rustdesk` |
+| Super+Shift+R | 새 바인딩 → `ob-rustdesk` (저장된 RustDesk 세션 선택 메뉴) |
 | Super+Shift+C | 새 바인딩 → `ob-change-colors` |
 | Super+Shift+P | 새 바인딩 → `power-profile-cycle` |
 | Super+Shift+← / → | 창을 이전·다음 워크스페이스로 보내고 따라가기 제거 |
@@ -61,9 +61,9 @@ exec kitty --class kitty_fullscreen --start-as=fullscreen \
 | Openbox | `themes/.current`는 `default` → `adaptive`. `rc.xml`의 창 테마는 `OB-Arc-Dark` → `OB-Adapta-Nokto`, 제목 버튼 배열은 `DLIMC` → `MLC`, 위 여백은 48 → 44px. 나머지 여백은 10px이고 데스크톱은 5개다. |
 | 창 격자 | `~/.config/ob-grid/config.toml`은 저장소 기본값과 동일하다. 가로 ¼·⅓·½·⅔·¾·1, 세로 ⅓·½·⅔·¾·1, 창 사이 간격 10px, 스냅 허용 오차 12px. 바깥 여백은 Openbox 작업 영역에서 반영된다. |
 | Polybar | Adaptive의 `polybar/config.ini`에서 `backlight` → `brightness`. `themes/system.ini`의 백라이트 장치도 `amdgpu_bl1` → `amdgpu_bl2`. 현재 나머지 설정값은 AC `ACAD`, 배터리 `BAT1`, 네트워크 `wlan0`이다. 여러 스타일의 모듈·팔레트 파일에도 변경이 있다. |
-| Rofi | 런처, 실행기, 전원 메뉴, 스크린샷, Bluetooth, askpass, 음악 래퍼가 `adaptive` 스타일을 직접 지정한다. `rofi-keybinds`와 `rofi-rustdesk`는 `.current`를 읽고 각 스타일의 `keybinds.rasi` / `rustdesk.rasi`를 사용한다. `rofi-keybinds`의 데이터는 `kbinds.txt`이며 키바인더의 `apply`로 생성한다. 사진 캡처 스크립트의 선택 테두리 색도 변경돼 있다. |
+| Rofi | 런처, 실행기, 전원 메뉴, 스크린샷, Bluetooth, askpass, 음악 래퍼가 `adaptive` 스타일을 직접 지정한다. `rofi-keybinds`는 `.current`를 읽고 현재 스타일의 `launcher.rasi`를 사용한다. 이 저장소의 `ob-opacity`, `ob-rustdesk`, `ob-monitors`도 `.current`를 읽어 Super+N(`networkmanager_dmenu`)과 같은 `networkmenu.rasi`를 쓰고, 아이콘만 바꾸거나 안내 문구 칸을 덧붙인다. 그래서 스타일을 바꿔도 스크립트를 고칠 필요가 없다. `rofi-keybinds`의 데이터는 `kbinds.txt`이며 키바인더의 `apply`로 생성한다. 사진 캡처 스크립트의 선택 테두리 색도 변경돼 있다. |
 | 벽지·색 | Nitrogen의 저장된 벽지는 Adaptive의 `wallpaper` 링크를 가리킨다. 메뉴 4종의 Change Wallpaper는 `ob-change-wallpaper`를 호출한다. Nitrogen에서 Apply를 누르면 `ob-theme-random.sh`가 `wal`로 팔레트를 생성한다. 색 변경은 Polybar, Rofi, Openbox 프레임, GTK CSS에 연결되고 여러 스타일의 `random.sh`가 공통 스크립트를 가리킨다. 전체 스타일 전환에는 기본 팔레트 복구와 Geany 적용 보조 코드가 있다. GTK CSS와 Kitty·Alacritty 색상 파일도 기본값에서 변경됐다. |
-| Picom | `~/.config/picom.conf`의 `#-ob-grid-anim-start`부터 끝 표식까지 `geometry-change` 애니메이션(0.18초)을 추가했다. 함께 비교한 별도 Picom 설정 세 가지는 기본값과 같았다. |
+| Picom | `~/.config/picom.conf`의 `#-ob-grid-anim-start`부터 끝 표식까지 `geometry-change` 애니메이션(0.18초)을 추가했다. 함께 비교한 별도 Picom 설정 세 가지는 기본값과 같았다. `rules:` 앞부분에는 `./desktop/ob-opacity --install`이 넣은 창 투명도 규칙이 있다. 활성 창 1.00, 비활성 창 0.92가 기본값이고 전체화면 창, mpv, Rofi 메뉴는 항상 불투명하다. Rofi는 키보드만 잡고 포커스를 받지 않아서, 이 예외가 없으면 비활성 창 값이 적용된다. |
 | Dunst | Openbox 시작 시 `systemctl --user start dunst.service`를 시도하고 실패 시 직접 시작한다. 테마 적용 스크립트도 같은 방식으로 재시작하며 `height`·`offset`을 튜플 문법으로 출력한다. 현재 값은 `height = (0, 80)`, `offset = (10, 44)`. 사용자 autostart에서 xfce4-notifyd를 숨겼다. |
 | 워크스페이스별 벽지 | `autostart`에 `workspace-wallpaper.sh` 호출이 있다. `workspace-wallpaper.py`는 Pillow와 Xlib을 사용한다. 현재 `~/.config/openbox/wallpapers/off` 표식이 있어 이 실험 기능은 꺼져 있다. |
 | 앱 메뉴 | `menu-*.xml`의 일부 pipemenu 호출이 기존 XML 엔티티에서 작성 당시 홈의 절대 경로로 바뀌었다. 경로와 실제 `pipemenus/` 파일, 패키지가 제공하는 `/usr/share/archcraft/openbox/pipemenus/`를 대상 PC 기준으로 확인한다. |
@@ -77,6 +77,8 @@ exec kitty --class kitty_fullscreen --start-as=fullscreen \
 ## 입력기와 기기 설정
 
 - 현재 삼성 랩톱의 화면 밝기는 기존 Fn 키에서 `desktop/ob-brightness`를 호출해 조절한다. 키보드 백라이트의 `Fn+F9`는 삼성 커널 드라이버가 처리하고, 보조 키 `Super+Alt+Shift+PageUp/PageDown`은 `brightnessctl`로 밝기 단계를 바꾼다. 물리적인 점등은 조도 센서의 영향을 받을 수 있다. 잠금은 `Super+Ctrl+L`과 Openbox 전원 메뉴에서 호출하고 `xss-lock`이 절전 앞에서 잠금을 처리한다.
+- `Super+I`는 `desktop/ob-opacity`의 Rofi 메뉴를 열어 활성 창과 비활성 창의 투명도를 고른다. 값은 `picom.conf`의 `# ob-opacity:active`, `# ob-opacity:inactive` 줄에 기록되고, picom은 `SIGUSR1` 신호로 바로 다시 읽는다. 터미널에서는 `ob-opacity inactive 0.9`처럼 값을 바로 지정하거나 `ob-opacity get`으로 현재 값을 확인할 수 있다. 새 PC에서는 `./desktop/ob-opacity --install`로 규칙을 추가한다.
+- `Super+Shift+R`은 `desktop/ob-rustdesk` 메뉴를 연다. RustDesk의 즐겨찾기(`RustDesk_local.toml`의 `fav`)를 먼저 보여 주고, 이어서 `~/.config/rustdesk/peers/*.toml`의 세션을 최근 사용 순으로 보여 준다. 고르면 `rustdesk --connect <ID>`로 접속한다. 목록 아래 `Connect to ID…`는 ID를 직접 입력하고, `Open RustDesk`는 본 창을 연다. 저장된 비밀번호는 읽지 않는다.
 - `Super+Shift+M`은 ARandR와 Autorandr의 디스플레이 프로필 메뉴를 연다. 노트북 화면 배치는 `laptop`으로 저장되어 있다. `Super+N`은 Wi‑Fi 메뉴, `Super+B`는 Bluetooth 메뉴를 실행한다.
 - 한글은 Fcitx5 + Hangul이다. Openbox `autostart`에서 `fcitx5 -d`를 실행하고 `~/.xprofile`, `~/.config/environment.d/fcitx.conf`에 `GTK_IM_MODULE=fcitx`, `QT_IM_MODULE=fcitx`, `XMODIFIERS=@im=fcitx`, `GLFW_IM_MODULE=ibus`를 둔다. 마지막 값은 Kitty/GLFW에 사용하는 설정이다. 현재 프로필에는 `keyboard-us`와 `hangul`이 있고 기존 기록의 전환 키는 Ctrl+Space, 오른쪽 Alt, Hangul이다.
 - 전원 메뉴의 Rofi 스크립트와 Openbox pipemenu는 절전 전 음악 정지·음소거 실패가 절전을 막지 않도록 바뀌었다. Rofi는 logind에 최대 절전 지원 여부를 물어보고 지원하지 않으면 알림을 띄운다.

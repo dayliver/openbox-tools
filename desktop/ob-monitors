@@ -1,6 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
-menu() { rofi -dmenu -i -p "$1" "${@:2}"; }
+# Same look as Super+N: the current Archcraft style's network menu theme.
+themes="$HOME/.config/openbox/themes"
+rasi="$themes/$(cat "$themes/.current" 2>/dev/null || echo default)/rofi/networkmenu.rasi"
+theme_args=()
+if [[ -f "$rasi" ]]; then
+    theme_args=(-theme "$rasi" -theme-str 'textbox-prompt-colon { str: "󰍹"; }')
+fi
+menu() { rofi -dmenu -i -p "$1" "${theme_args[@]}" "${@:2}"; }
 
 options=('Arrange displays' 'Save current layout' 'Restore saved layout' 'Apply matching layout')
 choice=$(printf '%s\n' "${options[@]}" | menu 'Displays' -no-custom) || exit 0
